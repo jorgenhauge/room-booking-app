@@ -10,15 +10,12 @@ The web application is build with python Flask framwork along with SQLite3 datab
 ## Setup
 1. Install flask and packages
 ```
-$ pip install flask
-$ pip install flask-wtf
-$ pip install flask-sqlalchemy
-$ pip install flask-migrate
-$ pip install flask-login
+$ pip install .
 ```
 2. Define the project
 ```
-$ export FLASK_APP=lab2.py
+$ export FLASK_APP="app:create_app"
+$ export FLASK_ENV=development
 ```
 
 3. Init the database
