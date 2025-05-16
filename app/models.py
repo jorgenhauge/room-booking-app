@@ -1,97 +1,130 @@
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
-from app import login
-from app import db
+from app import login, db
+
 
 @login.user_loader
-def load_user(id):
-    return User.query.get(int(id))
+def load_user(user_id):
+    return User.query.get(int(user_id))
 
-class User(UserMixin,db.Model):
-    id=db.Column(db.Integer, primary_key=True, nullable=False, unique=True)
-    username=db.Column(db.String(64), nullable=False,unique=True)
-    fullname=db.Column(db.String(64),nullable=False)
-    password_hash=db.Column(db.String(64), nullable=False)
-    position=db.Column(db.String(64), nullable=False)
-    teamId=db.Column(db.Integer, db.ForeignKey('team.id'), nullable=False)
-    meetings=db.relationship('Meeting',backref='booker',lazy='dynamic')
-    participatings=db.relationship('Participants_user',backref='participater',lazy='dynamic')
+
+class User(UserMixin, db.Model):
+    __tablename__ = 'user'
+
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(64), nullable=False, unique=True)
+    fullname = db.Column(db.String(64), nullable=False)
+    password_hash = db.Column(db.String(128), nullable=False)
+    position = db.Column(db.String(64), nullable=False)
+    team_id = db.Column(db.Integer, db.ForeignKey('team.id'), nullable=False)
+
+    bookings_made = db.relationship('Booking', backref='booker', lazy='dynamic')
+    participations = db.relationship('ParticipantsUser', backref='user', lazy='dynamic')
+
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
+
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
     def __repr__(self):
-        return f'<User {self.username}>'
-# dummy user User(username='david',fullname='David HUANG',position='CTO',teamId=1)
+        return f'<User {self.username} ({self.position})>'
+
+
 class Team(db.Model):
-    id=db.Column(db.Integer, primary_key=True, nullable=False, unique=True)
-    teamName=db.Column(db.String(64), nullable=False,unique=True)
-    members=db.relationship('User',backref='team',lazy='dynamic')
-    meetings=db.relationship('Meeting',backref='team',lazy='dynamic')
+    __tablename__ = 'team'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(64), nullable=False, unique=True)
+
+    members = db.relationship('User', backref='team', lazy='dynamic')
+    bookings = db.relationship('Booking', backref='team', lazy='dynamic')
 
     def __repr__(self):
-        return f'<Team {self.teamName}>'
+        return f'<Team {self.name}>'
 
-class Businesspartner(db.Model):
-    id=db.Column(db.Integer, primary_key=True, nullable=False, unique=True)
-    name=db.Column(db.String(64), nullable=False)
-    representing=db.Column(db.String(64), nullable=False)
-    position=db.Column(db.String(64), nullable=False)
-    participatings=db.relationship('Participants_partner',backref='participater',lazy='dynamic')
+
+class BusinessPartner(db.Model):
+    __tablename__ = 'business_partner'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(64), nullable=False)
+    representing = db.Column(db.String(64), nullable=False)
+    position = db.Column(db.String(64), nullable=False)
+
+    participations = db.relationship('ParticipantsPartner', backref='partner', lazy='dynamic')
 
     def __repr__(self):
-        return f'BusinessPartner {self.name}'
+        return f'<BusinessPartner {self.name} ({self.representing})>'
+
 
 class Room(db.Model):
-    id=db.Column(db.Integer, primary_key=True, nullable=False, unique=True)
-    roomName=db.Column(db.String(64), nullable=False)
-    telephone=db.Column(db.Boolean,nullable=False)
-    projector=db.Column(db.Boolean,nullable=False)
-    whiteboard=db.Column(db.Boolean,nullable=False)
-    cost=db.Column(db.Integer, nullable=False)
-    meetings=db.relationship('Meeting',backref='room',lazy='dynamic')
-    
-    def __repr__(self):
-        return f'Room {self.roomName}'
+    __tablename__ = 'room'
 
-class Meeting(db.Model):
-    id=db.Column(db.Integer, primary_key=True, nullable=False, unique=True)
-    title=db.Column(db.String(64),nullable=False,unique=True)
-    teamId=db.Column(db.Integer, db.ForeignKey('team.id'))
-    roomId=db.Column(db.Integer, db.ForeignKey('room.id'), nullable=False)
-    bookerId=db.Column(db.Integer, db.ForeignKey('user.id'))
-    date=db.Column(db.DateTime,nullable=False)
-    startTime=db.Column(db.Integer,nullable=False)
-    endTime=db.Column(db.Integer,nullable=False) # should be calculated with startTime and duration
-    duration=db.Column(db.Integer,nullable=False)
-    #cost=db.Column(db.Integer,nullable=False)
-    #participant_users=db.relationship('Participants_user',backref='meeting')
-    #participant_partners=db.relationship('Participants_partner',backref='meeting')
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(64), nullable=False)
+    capacity = db.Column(db.Integer, nullable=False)
+    telephone = db.Column(db.String(20), nullable=True)
+    projector = db.Column(db.Boolean, nullable=True)
+    whiteboard = db.Column(db.Boolean, nullable=True)
+    cost = db.Column(db.Integer, nullable=True)
+
+    bookings = db.relationship('Booking', backref='room', lazy='dynamic')
 
     def __repr__(self):
-        return f'Meeting {self.id} for {self.id} last for {self.duration}'
+        return f'<Room {self.name}>'
+
+
+class Booking(db.Model):
+    __tablename__ = 'booking'
+
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(64), nullable=False, unique=True)
+    team_id = db.Column(db.Integer, db.ForeignKey('team.id'), nullable=False)
+    room_id = db.Column(db.Integer, db.ForeignKey('room.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+
+    date = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    start_time = db.Column(db.Integer, nullable=False)
+    end_time = db.Column(db.Integer, nullable=False)
+    duration = db.Column(db.Integer, nullable=False)
+
+    def __repr__(self):
+        return f'<Booking {self.title} on {self.date.date()}>'
+
 
 class CostLog(db.Model):
-    # do not link with other relations since need to keep log even team deleted
-    id=db.Column(db.Integer, primary_key=True)
-    teamId=db.Column(db.Integer, nullable=False)
-    teamName=db.Column(db.String(64),nullable=False)
-    title=db.Column(db.String(64))
-    date=db.Column(db.DateTime) # should be the date of meeting
-    cost=db.Column(db.Integer, nullable=False)
-    
-class Participants_user(db.Model):
-    id=db.Column(db.Integer,primary_key=True)
-    meeting=db.Column(db.String(64), db.ForeignKey('meeting.title'))
-    userId=db.Column(db.Integer, db.ForeignKey('user.id'))
+    __tablename__ = 'cost_log'
 
-class Participants_partner(db.Model):
-    id=db.Column(db.Integer,primary_key=True)
-    meeting=db.Column(db.String(64), db.ForeignKey('meeting.title'))
-    partnerId=db.Column(db.Integer, db.ForeignKey('businesspartner.id'))
+    id = db.Column(db.Integer, primary_key=True)
+    team_id = db.Column(db.Integer, nullable=False)
+    team_name = db.Column(db.String(64), nullable=False)
+    title = db.Column(db.String(64))
+    date = db.Column(db.DateTime)
+    cost = db.Column(db.Integer, nullable=False)
+
+    def __repr__(self):
+        return f'<CostLog {self.title} - {self.cost}>'
 
 
+class ParticipantsUser(db.Model):
+    __tablename__ = 'participants_user'
+
+    id = db.Column(db.Integer, primary_key=True)
+    booking_title = db.Column(db.String(64), db.ForeignKey('booking.title'))
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+
+    def __repr__(self):
+        return f'<ParticipantsUser user_id={self.user_id} booking={self.booking_title}>'
 
 
+class ParticipantsPartner(db.Model):
+    __tablename__ = 'participants_partner'
+
+    id = db.Column(db.Integer, primary_key=True)
+    booking_title = db.Column(db.String(64), db.ForeignKey('booking.title'))
+    partner_id = db.Column(db.Integer, db.ForeignKey('business_partner.id'))
+
+    def __repr__(self):
+        return f'<ParticipantsPartner partner_id={self.partner_id} booking={self.booking_title}>'

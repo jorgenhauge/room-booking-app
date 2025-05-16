@@ -1,14 +1,25 @@
-from flask import Flask, url_for
+from flask import Flask
 from config import Config
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager
 
-app = Flask(__name__)
-app.config.from_object(Config)
-db = SQLAlchemy(app)
-migrate = Migrate(app, db)
-login=LoginManager(app)
-login.login_view='login' # specify the login page to redirect when require login
+db = SQLAlchemy()
+migrate = Migrate()
+login = LoginManager()
+login.login_view = "login"
 
-from app import routes,models
+
+def create_app():
+    app = Flask(__name__)
+    app.config.from_object(Config)
+
+    db.init_app(app)
+    migrate.init_app(app, db)
+    login.init_app(app)
+
+    from app.routes import bp as main_bp
+    app.register_blueprint(main_bp)
+
+    return app
+

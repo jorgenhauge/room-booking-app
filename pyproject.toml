@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "room-booking-app"
+version = "0.1.0"
+description = "A simple room booking system built with Flask and SQLite"
+authors = [
+  { name = "chuangag", email = "chuangag@example.com" }
+]
+readme = "README.md"
+requires-python = ">=3.6"
+dependencies = [
+  "Flask",
+  "Flask-WTF",
+  "Flask-SQLAlchemy",
+  "Flask-Migrate",
+  "Flask-Login"
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
